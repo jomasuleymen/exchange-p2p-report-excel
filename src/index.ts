@@ -1,5 +1,6 @@
 import config from "./config/config";
 import exchanges from "./exchanges";
+import { ExcelP2PService } from "./services/excel/excel";
 import { fetchP2POrders } from "./services/p2p-orders";
 import { P2POrder } from "./types";
 
@@ -13,8 +14,8 @@ const main = async () => {
 	}
 
 	const orders: P2POrder[] = await fetchP2POrders(exchanges, fetchOptions);
-	console.log(orders.length);
-	// await exportOrdersToExcel(orders, fetchOptions);
+	const excelService = new ExcelP2PService();
+	await excelService.exportOrdersToExcel(orders, fetchOptions);
 };
 
 main();
