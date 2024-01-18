@@ -1,5 +1,5 @@
 import { P2PExchange, P2POrder } from "@/types";
-import { formatDate } from "@/utils/time.util";
+import { formatDate, sleep } from "@/utils/time.util";
 import axios from "axios";
 
 export class BinanceP2PExchange implements P2PExchange {
@@ -23,7 +23,7 @@ export class BinanceP2PExchange implements P2PExchange {
 
 		const body = {
 			page,
-			rows: 30, // TODO: check max rows number
+			rows: 40,
 			startDate: startDateStr,
 			endDate: endDateStr,
 			orderStatusList: [4], // 4 - completed
@@ -32,10 +32,11 @@ export class BinanceP2PExchange implements P2PExchange {
 		const headers = {
 			Host: "www.binance.com",
 			clienttype: "web",
-			"Content-Length": JSON.stringify(body),
-			"content-type": "application/json",
+			"Content-Length": JSON.stringify(body).length,
+			"Content-Type": "application/json",
 			csrftoken: this.csrfToken,
 			Cookie: `p20t=${this.sessionId};`,
+			"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 		};
 
 		return {
@@ -50,11 +51,13 @@ export class BinanceP2PExchange implements P2PExchange {
 			const orders: P2POrder[] = [];
 
 			while (true) {
+				console.log(`Fetching ${this.exchangeName} P2POrders page ${page}`);
 				const { body, headers } = this.getRequestPayload(
 					startDate,
 					endDate,
 					page
 				);
+
 				const res = await axios.post(this.p2pOrdersUrl, body, { headers });
 
 				const { data: fetchedOrders } = res.data;
@@ -64,6 +67,8 @@ export class BinanceP2PExchange implements P2PExchange {
 
 				orders.push(...parsedOrders);
 				page++;
+
+				await sleep(1500);
 			}
 
 			return orders;
