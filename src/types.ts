@@ -17,6 +17,6 @@ export type P2POrder = {
 };
 
 export type P2PExchange = {
-	exchangeName: string;
+	name: string;
 	fetchP2POrders(startDate: Date, endDate: Date): Promise<P2POrder[]>;
 };

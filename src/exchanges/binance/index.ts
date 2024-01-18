@@ -3,7 +3,7 @@ import { formatDate, sleep } from "@/utils/time.util";
 import axios from "axios";
 
 export class BinanceP2PExchange implements P2PExchange {
-	exchangeName: string = "Binance";
+	name: string = "Binance";
 	p2pOrdersUrl: string =
 		"https://www.binance.com/bapi/c2c/v1/private/c2c/order-match/order-list-archived-involved";
 
@@ -12,9 +12,9 @@ export class BinanceP2PExchange implements P2PExchange {
 		private readonly csrfToken: string
 	) {
 		if (!sessionId)
-			throw new Error(`"sessionId" for ${this.exchangeName} not provided`);
+			throw new Error(`"sessionId" for ${this.name} not provided`);
 		if (!csrfToken)
-			throw new Error(`"csrfToken" for ${this.exchangeName} not provided`);
+			throw new Error(`"csrfToken" for ${this.name} not provided`);
 	}
 
 	getRequestPayload(startDate: Date, endDate: Date, page: number) {
@@ -51,7 +51,7 @@ export class BinanceP2PExchange implements P2PExchange {
 			const orders: P2POrder[] = [];
 
 			while (true) {
-				console.log(`Fetching ${this.exchangeName} P2POrders page ${page}`);
+				console.log(`Fetching ${this.name} P2P Orders page ${page}`);
 				const { body, headers } = this.getRequestPayload(
 					startDate,
 					endDate,
@@ -74,7 +74,7 @@ export class BinanceP2PExchange implements P2PExchange {
 			return orders;
 		} catch (err) {
 			throw new Error(
-				`Some error while fetching P2POrders of ${this.exchangeName}: ${err}`
+				`Some error while fetching P2POrders of ${this.name}: ${err}`
 			);
 		}
 	}
@@ -128,7 +128,7 @@ export class BinanceP2PExchange implements P2PExchange {
 				counterPartyNickname: getCounterPartyNickname(order) || "?",
 				counterPartyName: getCounterPartyName(order) || "?",
 				side: order.tradeType,
-				exchange: this.exchangeName,
+				exchange: this.name,
 				dateAndTime: formatDate(new Date(order.createTime)),
 				price: parseFloat(order.price),
 				count: parseFloat(order.amount),
