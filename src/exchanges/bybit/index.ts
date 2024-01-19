@@ -118,6 +118,8 @@ export class BybitP2PExchange implements P2PExchange {
 				selectedPayment = order.paymentTermList.find(
 					(payment: any) => payment.paymentType == selectedPaymentType
 				);
+				
+				return selectedPayment?.bankName;
 			}
 
 			return selectedPayment?.paymentName;
