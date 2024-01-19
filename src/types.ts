@@ -1,5 +1,10 @@
 export type P2PDateTime = string;
 
+export type RawP2PData = {
+	exchangeName: string;
+	orders: any[];
+};
+
 export type P2POrder = {
 	url: string;
 	orderId: string;
@@ -18,5 +23,6 @@ export type P2POrder = {
 
 export type P2PExchange = {
 	name: string;
-	fetchP2POrders(startDate: Date, endDate: Date): Promise<P2POrder[]>;
+	fetchP2POrders(startDate: Date, endDate: Date): Promise<any[]>;
+	parseP2POrders(orders: any[]): P2POrder[];
 };

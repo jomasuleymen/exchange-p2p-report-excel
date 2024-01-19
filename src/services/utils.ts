@@ -1,8 +1,8 @@
-import path from "path";
-import { P2POrdersFetchOptions } from "./p2p-orders";
-import { P2PExchange, P2POrder } from "@/types";
+import { P2PExchange, RawP2PData } from "@/types";
 import { writeJsonFile } from "@/utils/file.util";
 import * as fs from "fs";
+import path from "path";
+import { P2POrdersFetchOptions } from "./p2p-orders";
 
 const getAccountOrdersPath = (nickName: string) => {
 	return path.join(__dirname, "..", "orders", nickName);
@@ -28,12 +28,12 @@ export const getExchangeOrdersFilePath = (
 export const writeOrdersOnDisk = (
 	fetchOptions: P2POrdersFetchOptions,
 	exchanges: P2PExchange[],
-	orders: P2POrder[]
+	rawP2PData: RawP2PData[]
 ) => {
 	exchanges.forEach((exchange) => {
 		const ordersDirPath = getExchangeOrdersFilePath(fetchOptions, exchange);
-		const exchangeOrders = orders.filter(
-			(order) => order.exchange === exchange.name
+		const exchangeOrders = rawP2PData.find(
+			(order) => order.exchangeName === exchange.name
 		);
 		writeJsonFile(ordersDirPath, exchangeOrders);
 	});

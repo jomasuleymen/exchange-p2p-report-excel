@@ -36,7 +36,8 @@ export class BinanceP2PExchange implements P2PExchange {
 			"Content-Type": "application/json",
 			csrftoken: this.csrfToken,
 			Cookie: `p20t=${this.sessionId};`,
-			"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+			"User-Agent":
+				"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 		};
 
 		return {
@@ -45,10 +46,10 @@ export class BinanceP2PExchange implements P2PExchange {
 		};
 	}
 
-	async fetchP2POrders(startDate: Date, endDate: Date): Promise<P2POrder[]> {
+	async fetchP2POrders(startDate: Date, endDate: Date): Promise<any[]> {
 		try {
 			let page = 1;
-			const orders: P2POrder[] = [];
+			const orders: any[] = [];
 
 			while (true) {
 				console.log(`Fetching ${this.name} P2P Orders page ${page}`);
@@ -63,9 +64,7 @@ export class BinanceP2PExchange implements P2PExchange {
 				const { data: fetchedOrders } = res.data;
 				if (!fetchedOrders || !fetchedOrders?.length) break;
 
-				const parsedOrders: P2POrder[] = this.parseOrders(fetchedOrders);
-
-				orders.push(...parsedOrders);
+				orders.push(...fetchedOrders);
 				page++;
 
 				await sleep(1500);
@@ -79,7 +78,7 @@ export class BinanceP2PExchange implements P2PExchange {
 		}
 	}
 
-	parseOrders(fetchedOrders: any[]): P2POrder[] {
+	parseP2POrders(fetchedOrders: any[]): P2POrder[] {
 		const orders: P2POrder[] = [];
 
 		const getOrderUrl = (orderId: string, createdAt: string) =>
@@ -112,7 +111,7 @@ export class BinanceP2PExchange implements P2PExchange {
 				for (let searchFieldName of searchFieldNames) {
 					for (let field of fields) {
 						if (
-							field.fieldName?.toLoweCase?.() == searchFieldName &&
+							field.fieldName?.toLowerCase?.() == searchFieldName &&
 							field.fieldValue
 						)
 							return field.fieldValue;
@@ -126,7 +125,8 @@ export class BinanceP2PExchange implements P2PExchange {
 				url: getOrderUrl(order.orderNumber, order.createTime),
 				orderId: order.orderNumber,
 				counterPartyNickname: getCounterPartyNickname(order) || "?",
-				counterPartyName: getCounterPartyName(order) || "?",
+				counterPartyName:
+					order.tradeType == "BUY" ? getCounterPartyName(order) : "",
 				side: order.tradeType,
 				exchange: this.name,
 				dateAndTime: formatDate(new Date(order.createTime)),

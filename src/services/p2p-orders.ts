@@ -1,13 +1,13 @@
-import { P2PExchange, P2POrder } from "@/types";
+import { P2PExchange, RawP2PData } from "@/types";
+import { readJsonFile } from "@/utils/file.util";
 import { sleep } from "@/utils/time.util";
+import * as fs from "fs";
 import moment from "moment";
 import {
 	getExchangeOrdersFilePath,
 	isExchangeOrdersAlreadyOnDisk,
 	writeOrdersOnDisk,
 } from "./utils";
-import { readJsonFile } from "@/utils/file.util";
-import * as fs from "fs";
 
 export type FetchDate = { year: number; month: number; day: number };
 
@@ -71,7 +71,7 @@ const getOrdersFromDisk = (
 	exchanges: P2PExchange[],
 	fetchOptions: P2POrdersFetchOptions
 ) => {
-	const orders: P2POrder[] = [];
+	const orders: RawP2PData[] = [];
 	exchanges.forEach((exchange) => {
 		const exchangeOrdersPath = getExchangeOrdersFilePath(
 			fetchOptions,
@@ -80,8 +80,8 @@ const getOrdersFromDisk = (
 
 		if (fs.existsSync(exchangeOrdersPath)) {
 			console.log(`Reading orders on disk for ${exchange.name}`);
-			const exchangeOrders = readJsonFile(exchangeOrdersPath);
-			orders.push(...exchangeOrders);
+			const exchangeOrders: RawP2PData = readJsonFile(exchangeOrdersPath);
+			orders.push(exchangeOrders);
 		}
 	});
 
@@ -93,31 +93,42 @@ const MAX_FETCH_DURATION_DAYS = 59;
 export async function fetchP2POrders(
 	exchanges: P2PExchange[],
 	fetchOptions: P2POrdersFetchOptions
-): Promise<P2POrder[]> {
+): Promise<RawP2PData[]> {
 	const [startDate, endDate] = getOptionsDate(fetchOptions);
-	const allOrders: P2POrder[] = getOrdersFromDisk(exchanges, fetchOptions);
-	const fetchExchanges = filterExchanges(exchanges, fetchOptions);
-
+	
 	// Fetch orders in batches of MAX_FETCH_DURATION_DAYS
 	let nextStartDate = getDateFromBeginDay(startDate);
 	let nextEndDate = getDateFromEndDay(
 		getMaxDate(startDate, endDate, MAX_FETCH_DURATION_DAYS)
 	);
 
+	const fetchExchanges = filterExchanges(exchanges, fetchOptions);
+	const ordersData: RawP2PData[] = getOrdersFromDisk(exchanges, fetchOptions);
+	fetchExchanges.forEach((exchange) => {
+		ordersData.push({
+			exchangeName: exchange.name,
+			orders: [],
+		});
+	});
+
 	if (fetchExchanges.length === 0) {
-		return allOrders;
+		return ordersData;
 	}
 
 	while (nextStartDate < endDate) {
 		// Fetch orders from all exchanges
-		const orders = await Promise.all(
-			fetchExchanges.map((exchange) =>
-				exchange.fetchP2POrders(nextStartDate, nextEndDate)
-			)
+		await Promise.all(
+			fetchExchanges.map(async (exchange) => {
+				const orders = await exchange.fetchP2POrders(
+					nextStartDate,
+					nextEndDate
+				);
+				const data = ordersData.find(
+					(data) => data.exchangeName === exchange.name
+				);
+				data?.orders.push(...orders);
+			})
 		);
-
-		// Flatten orders array
-		orders.forEach((orders) => allOrders.push(...orders));
 
 		// Update dates for next iteration
 		nextEndDate.setDate(nextEndDate.getDate() + 1);
@@ -130,7 +141,7 @@ export async function fetchP2POrders(
 		await sleep(1000);
 	}
 
-	writeOrdersOnDisk(fetchOptions, exchanges, allOrders);
+	writeOrdersOnDisk(fetchOptions, exchanges, ordersData);
 
-	return allOrders;
+	return ordersData;
 }
