@@ -51,7 +51,7 @@ export const getRawOrdersFromDisk = (
 		);
 
 		if (isPathExists(exchangeOrdersPath)) {
-			console.log(`Reading orders on disk for ${exchange.name}`);
+			console.log(`Reading orders from cache for ${exchange.name}`);
 			const exchangeOrders: P2PRawOrders = readJsonFile(exchangeOrdersPath);
 			rawOrders.push(exchangeOrders);
 		}

@@ -1,6 +1,7 @@
 declare global {
 	namespace NodeJS {
 		interface ProcessEnv {
+			TIME_ZONE: string;
 			BINANCE_SESSION_ID: string;
 			BINANCE_CSRF_TOKEN: string;
 			BYBIT_SECURE_TOKEN: string;

@@ -1,11 +1,7 @@
 import { P2PExchange, P2PRawOrders } from "@/types";
-import { sleep } from "@/utils/time.util";
+import { getUTCDate, sleep } from "@/utils/time.util";
 import moment from "moment";
-import {
-	getRawOrdersFromDisk,
-	isExchangeOrdersAlreadyOnDisk,
-	writeRawOrdersOnDisk,
-} from "./utils";
+import { getRawOrdersFromDisk, writeRawOrdersOnDisk } from "./utils";
 
 export type FetchDate = { year: number; month: number; day: number };
 
@@ -43,6 +39,7 @@ const getOptionsDate = (fetchOptions: P2POrdersFetchOptions) => {
 		59,
 		999
 	);
+
 	return [startDateDate, endDateDate];
 };
 
@@ -53,23 +50,23 @@ const getMaxDate = (startDate: Date, maxDate: Date, durationDays: number) => {
 	return startMaxDate > maxDate ? maxDate : startMaxDate;
 };
 
-const filterExchangesFromCache = (
+const getFromCache = (
 	exchanges: P2PExchange[],
 	fetchOptions: P2POrdersFetchOptions
 ) => {
-	// Filter exchanges that already have orders on disk
-	const fetchExchanges = exchanges.filter(
-		(exchange) => !isExchangeOrdersAlreadyOnDisk(fetchOptions, exchange)
-	);
-	const cachedExchanges = exchanges.filter((exchange) =>
-		isExchangeOrdersAlreadyOnDisk(fetchOptions, exchange)
-	);
-
 	// Write cached orders into rawOrders
 	const ordersInCache: P2PRawOrders[] = getRawOrdersFromDisk(
-		cachedExchanges,
+		exchanges,
 		fetchOptions
 	);
+
+	// Filter exchanges that already have orders on disk
+	const fetchExchanges = exchanges.filter((exchange) => {
+		const exIndex = ordersInCache.findIndex(
+			(data) => data.exchangeName == exchange.name
+		);
+		return exIndex == -1;
+	});
 
 	// Create orders date for caching
 	fetchExchanges.forEach((exchange) => {
@@ -96,7 +93,7 @@ export async function fetchP2POrders(
 		getMaxDate(startDate, endDate, MAX_FETCH_DURATION_DAYS)
 	);
 
-	const { fetchExchanges, ordersInCache: rawOrders } = filterExchangesFromCache(
+	const { fetchExchanges, ordersInCache: rawOrders } = getFromCache(
 		exchanges,
 		fetchOptions
 	);
@@ -111,8 +108,8 @@ export async function fetchP2POrders(
 			fetchExchanges.map(async (exchange) => {
 				// fetch orders from exchange
 				const orders = await exchange.fetchP2POrders(
-					nextStartDate,
-					nextEndDate
+					getUTCDate(nextStartDate),
+					getUTCDate(nextEndDate)
 				);
 
 				// put orders into rawOrders for caching(writing on disk)

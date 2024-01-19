@@ -4,7 +4,7 @@ import _ from "lodash";
 const showInfo = (orders: P2POrder[]) => {
 	const groupedByExchange = _.groupBy(orders, "exchange");
 	for (const [exchange, orders] of Object.entries(groupedByExchange)) {
-		console.log(exchange, "-", orders.length);
+		console.log(exchange, "-", orders.length, "orders");
 	}
 };
 
