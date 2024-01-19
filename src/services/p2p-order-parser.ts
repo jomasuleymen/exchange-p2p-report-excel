@@ -1,4 +1,12 @@
 import { P2PExchange, P2POrder, P2PRawOrders } from "@/types";
+import _ from "lodash";
+
+const showInfo = (orders: P2POrder[]) => {
+	const groupedByExchange = _.groupBy(orders, "exchange");
+	for (const [exchange, orders] of Object.entries(groupedByExchange)) {
+		console.log(exchange, "-", orders.length);
+	}
+};
 
 export async function parseOrders(
 	excahnges: P2PExchange[],
@@ -22,6 +30,8 @@ export async function parseOrders(
 
 		allParsedOrders.push(...parsedOrders);
 	}
+
+	showInfo(allParsedOrders);
 
 	return allParsedOrders;
 }

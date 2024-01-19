@@ -123,16 +123,16 @@ export class BybitP2PExchange implements P2PExchange {
 				orderId: order.id,
 				counterPartyNickname: order.targetNickName || "?",
 				counterPartyName:
-					order.side == 1 ? order.sellerRealName : order.buyerRealName,
-				side: order.tradeType,
+					order.side == 1 ? order.buyerRealName : order.sellerRealName,
+				side: order.side == 1 ? "SELL" : "BUY",
 				exchange: this.name,
 				dateAndTime: formatDate(new Date(Number(order.createDate))),
 				price: parseFloat(order.price),
 				count: parseFloat(order.quantity),
 				amount: parseFloat(order.amount),
-				asset: order.tokenId || order.tokenName,
+				asset: (order.tokenId || order.tokenName).toUpperCase(),
 				bankName: (await getBankName(order)) || "?",
-				fiat: order.currencyId,
+				fiat: order.currencyId.toUpperCase(),
 			});
 		}
 

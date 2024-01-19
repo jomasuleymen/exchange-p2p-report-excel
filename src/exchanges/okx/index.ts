@@ -16,7 +16,7 @@ export class OkxP2PExchange implements P2PExchange {
 		const endDateStr = endDate.getTime().toString();
 
 		const params = {
-			pageSize: 40,
+			pageSize: 45,
 			pageIndex: page,
 			startTime: startDateStr,
 			orderType: "completed",
@@ -52,7 +52,9 @@ export class OkxP2PExchange implements P2PExchange {
 
 				const res = await axios.get(this.p2pOrdersUrl, { headers, params });
 
-				const { data: fetchedOrders } = res.data;
+				const {
+					data: { items: fetchedOrders },
+				} = res.data;
 				if (!fetchedOrders || !fetchedOrders?.length) break;
 
 				orders.push(...fetchedOrders);
@@ -69,45 +71,27 @@ export class OkxP2PExchange implements P2PExchange {
 		}
 	}
 
-	parseP2POrders(fetchedOrders: any[]): P2POrder[] {
+	async parseP2POrders(fetchedOrders: any[]): Promise<P2POrder[]> {
 		const orders: P2POrder[] = [];
 
-		const getOrderUrl = (orderId: string, createdAt: string) =>
-			`https://c2c.binance.com/ru/fiatOrderDetail?orderNo=${orderId}&createdAt=${createdAt}`;
-		const getCounterPartyNickname = (order: any) =>
-			(order.tradeType == "BUY" ? order.sellerNickname : order.buyerNickname) ||
-			order.makerNickname;
-
-		const getBankName = (order: any) => {
-			const selectedPaymentId = order.selectedPayId;
-			const paymentMethods: any[] = order.payMethods;
-
-			const selectedPayment = paymentMethods.find(
-				(payment: any) => payment.id == selectedPaymentId
-			);
-			return (
-				selectedPayment.tradeMethodName ||
-				selectedPayment.tradeMethodShortName ||
-				selectedPayment.identifier
-			);
-		};
+		const getOrderUrl = (orderId: string) =>
+			`https://www.okx.com/ru/p2p/order?orderId=${orderId}`;
 
 		for (let order of fetchedOrders) {
 			orders.push({
-				url: getOrderUrl(order.orderNumber, order.createTime),
-				orderId: order.orderNumber,
-				counterPartyNickname: getCounterPartyNickname(order) || "?",
-				counterPartyName:
-					order.tradeType == "BUY" ? getCounterPartyName(order) : "",
-				side: order.tradeType,
+				url: getOrderUrl(order.id),
+				orderId: order.id,
+				counterPartyNickname: order.detailUser?.nickName || "?",
+				counterPartyName: order.detailUser?.realName || "?",
+				side: order.side.toUpperCase() || "?",
 				exchange: this.name,
-				dateAndTime: formatDate(new Date(order.createTime)),
+				dateAndTime: formatDate(new Date(order.createdDate)),
 				price: parseFloat(order.price),
-				count: parseFloat(order.amount),
-				amount: parseFloat(order.totalPrice),
-				asset: order.asset,
-				bankName: getBankName(order) || "?",
-				fiat: order.fiat,
+				count: parseFloat(order.baseAmount),
+				amount: parseFloat(order.quoteAmount),
+				asset: order.baseCurrency.toUpperCase(),
+				bankName: order.receiptAccountType || "?",
+				fiat: order.quoteCurrency.toUpperCase(),
 			});
 		}
 

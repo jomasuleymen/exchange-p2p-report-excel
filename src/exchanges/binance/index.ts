@@ -133,9 +133,9 @@ export class BinanceP2PExchange implements P2PExchange {
 				price: parseFloat(order.price),
 				count: parseFloat(order.amount),
 				amount: parseFloat(order.totalPrice),
-				asset: order.asset,
+				asset: order.asset.toUpperCase(),
 				bankName: getBankName(order) || "?",
-				fiat: order.fiat,
+				fiat: order.fiat.toUpperCase(),
 			});
 		}
 
