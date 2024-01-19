@@ -110,9 +110,15 @@ export class BybitP2PExchange implements P2PExchange {
 		const getBankName = async (order: any) => {
 			const selectedPaymentType = order.paymentType;
 			const paymentList = await this.getAllPaymentList();
-			const selectedPayment = paymentList.find(
+			let selectedPayment = paymentList.find(
 				(payment: any) => payment.paymentType == selectedPaymentType
 			);
+
+			if (!selectedPayment) {
+				selectedPayment = order.paymentTermList.find(
+					(payment: any) => payment.paymentType == selectedPaymentType
+				);
+			}
 
 			return selectedPayment?.paymentName;
 		};

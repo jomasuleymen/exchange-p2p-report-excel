@@ -19,14 +19,20 @@ export class ExcelP2PService {
 
 		const workbook = new Excel.Workbook();
 		await workbook.xlsx.readFile(this.templatePath);
-		const currentTemplateSheet =
-			workbook.getWorksheet("KZT") || workbook.worksheets[0];
-		currentTemplateSheet.name = this.templateSheetName;
 
 		this.templateWorkbook = workbook;
 
 		return workbook;
 	};
+
+	private async getTemplateSheet() {
+		const templateWorkbook = await this.getTemplateWorkbook();
+		const templateSheet =
+			templateWorkbook.getWorksheet(this.templateSheetName) ||
+			templateWorkbook.worksheets[0];
+
+		return templateSheet;
+	}
 
 	private async prepareWorkBook() {
 		const wb = new Excel.Workbook();
@@ -44,19 +50,16 @@ export class ExcelP2PService {
 		return wb;
 	}
 
-	private async addNewFiatCurrencySheet(wb: Workbook, fiatCurrency: string) {
+	private async getFiatCurrencySheet(wb: Workbook, fiatCurrency: string) {
 		// if sheet already exists, delete it
-		const existingSheet = wb.getWorksheet(fiatCurrency);
-		if (existingSheet) wb.removeWorksheet(fiatCurrency);
+		let ws = wb.getWorksheet(fiatCurrency);
+		if (!ws) {
+			const templateWorksheet = await this.getTemplateSheet();
 
-		const templateWorkbook = await this.getTemplateWorkbook();
-		const templateWorksheet =
-			templateWorkbook.getWorksheet(this.templateSheetName) ||
-			templateWorkbook.worksheets[0];
-
-		const ws = wb.addWorksheet(fiatCurrency);
-		ws.model = templateWorksheet.model;
-		ws.name = fiatCurrency;
+			ws = wb.addWorksheet(fiatCurrency);
+			ws.model = templateWorksheet.model;
+			ws.name = fiatCurrency;
+		}
 
 		return ws;
 	}
@@ -112,12 +115,12 @@ export class ExcelP2PService {
 		// insert visibleOrders into workbook
 		const groupedByFiat = _.groupBy(visibleOrders, "fiat");
 		for (const [fiatCurrency, orders] of Object.entries(groupedByFiat)) {
-			const ws = await this.addNewFiatCurrencySheet(wb, fiatCurrency);
+			const ws = await this.getFiatCurrencySheet(wb, fiatCurrency);
 			this.insertOrdersToSheet(ws, orders);
 		}
 
 		// insert hiddenOrders into workbook
-		const ws = await this.addNewFiatCurrencySheet(wb, "Скрытые");
+		const ws = await this.getFiatCurrencySheet(wb, "Скрытые");
 		this.insertOrdersToSheet(ws, hiddenOrders);
 
 		// write orders report into excel file
