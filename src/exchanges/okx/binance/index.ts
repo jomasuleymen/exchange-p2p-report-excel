@@ -78,7 +78,7 @@ export class BinanceP2PExchange implements P2PExchange {
 		}
 	}
 
-	async parseP2POrders(fetchedOrders: any[]): Promise<P2POrder[]> {
+	parseP2POrders(fetchedOrders: any[]): P2POrder[] {
 		const orders: P2POrder[] = [];
 
 		const getOrderUrl = (orderId: string, createdAt: string) =>

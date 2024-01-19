@@ -2,46 +2,37 @@ import { P2PExchange, P2POrder } from "@/types";
 import { formatDate, sleep } from "@/utils/time.util";
 import axios from "axios";
 
-export class BinanceP2PExchange implements P2PExchange {
-	name: string = "Binance";
-	p2pOrdersUrl: string =
-		"https://www.binance.com/bapi/c2c/v1/private/c2c/order-match/order-list-archived-involved";
+export class OkxP2PExchange implements P2PExchange {
+	name: string = "OKX";
+	p2pOrdersUrl: string = "https://www.okx.com/v4/c2c/order/getOrderList";
 
-	constructor(
-		private readonly sessionId: string,
-		private readonly csrfToken: string
-	) {
-		if (!sessionId)
-			throw new Error(`"sessionId" for ${this.name} not provided`);
-		if (!csrfToken)
-			throw new Error(`"csrfToken" for ${this.name} not provided`);
+	constructor(private readonly auth_token: string) {
+		if (!auth_token)
+			throw new Error(`"Authorization" for ${this.name} not provided`);
 	}
 
 	getRequestPayload(startDate: Date, endDate: Date, page: number) {
 		const startDateStr = startDate.getTime().toString();
 		const endDateStr = endDate.getTime().toString();
 
-		const body = {
-			page,
-			rows: 40,
-			startDate: startDateStr,
-			endDate: endDateStr,
-			orderStatusList: [4], // 4 - completed
+		const params = {
+			pageSize: 40,
+			pageIndex: page,
+			startTime: startDateStr,
+			orderType: "completed",
+			orderStatusLabel: 4,
+			endTime: endDateStr,
 		};
 
 		const headers = {
-			Host: "www.binance.com",
-			clienttype: "web",
-			"Content-Length": JSON.stringify(body).length,
-			"Content-Type": "application/json",
-			csrftoken: this.csrfToken,
-			Cookie: `p20t=${this.sessionId};`,
+			Host: "www.okx.com",
+			Authorization: this.auth_token,
 			"User-Agent":
 				"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 		};
 
 		return {
-			body,
+			params,
 			headers,
 		};
 	}
@@ -53,13 +44,13 @@ export class BinanceP2PExchange implements P2PExchange {
 
 			while (true) {
 				console.log(`Fetching ${this.name} P2P Orders page ${page}`);
-				const { body, headers } = this.getRequestPayload(
+				const { params, headers } = this.getRequestPayload(
 					startDate,
 					endDate,
 					page
 				);
 
-				const res = await axios.post(this.p2pOrdersUrl, body, { headers });
+				const res = await axios.get(this.p2pOrdersUrl, { headers, params });
 
 				const { data: fetchedOrders } = res.data;
 				if (!fetchedOrders || !fetchedOrders?.length) break;
@@ -78,7 +69,7 @@ export class BinanceP2PExchange implements P2PExchange {
 		}
 	}
 
-	async parseP2POrders(fetchedOrders: any[]): Promise<P2POrder[]> {
+	parseP2POrders(fetchedOrders: any[]): P2POrder[] {
 		const orders: P2POrder[] = [];
 
 		const getOrderUrl = (orderId: string, createdAt: string) =>
@@ -86,6 +77,7 @@ export class BinanceP2PExchange implements P2PExchange {
 		const getCounterPartyNickname = (order: any) =>
 			(order.tradeType == "BUY" ? order.sellerNickname : order.buyerNickname) ||
 			order.makerNickname;
+
 		const getBankName = (order: any) => {
 			const selectedPaymentId = order.selectedPayId;
 			const paymentMethods: any[] = order.payMethods;
@@ -98,26 +90,6 @@ export class BinanceP2PExchange implements P2PExchange {
 				selectedPayment.tradeMethodShortName ||
 				selectedPayment.identifier
 			);
-		};
-
-		const getCounterPartyName = (order: any) => {
-			const paymentMethods: any[] = order.payMethods;
-			const searchFieldNames = ["full name", "name"];
-
-			for (let payment of paymentMethods) {
-				const fields: any[] = payment.fields;
-				if (!fields) continue;
-
-				for (let searchFieldName of searchFieldNames) {
-					for (let field of fields) {
-						if (
-							field.fieldName?.toLowerCase?.() == searchFieldName &&
-							field.fieldValue
-						)
-							return field.fieldValue;
-					}
-				}
-			}
 		};
 
 		for (let order of fetchedOrders) {

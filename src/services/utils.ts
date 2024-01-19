@@ -1,4 +1,4 @@
-import { P2PExchange, RawP2PData } from "@/types";
+import { P2PExchange, P2PRawOrders } from "@/types";
 import { writeJsonFile } from "@/utils/file.util";
 import * as fs from "fs";
 import path from "path";
@@ -28,7 +28,7 @@ export const getExchangeOrdersFilePath = (
 export const writeOrdersOnDisk = (
 	fetchOptions: P2POrdersFetchOptions,
 	exchanges: P2PExchange[],
-	rawP2PData: RawP2PData[]
+	rawP2PData: P2PRawOrders[]
 ) => {
 	exchanges.forEach((exchange) => {
 		const ordersDirPath = getExchangeOrdersFilePath(fetchOptions, exchange);

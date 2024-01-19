@@ -1,4 +1,4 @@
-import { P2PExchange, RawP2PData } from "@/types";
+import { P2PExchange, P2PRawOrders } from "@/types";
 import { readJsonFile } from "@/utils/file.util";
 import { sleep } from "@/utils/time.util";
 import * as fs from "fs";
@@ -71,7 +71,7 @@ const getOrdersFromDisk = (
 	exchanges: P2PExchange[],
 	fetchOptions: P2POrdersFetchOptions
 ) => {
-	const orders: RawP2PData[] = [];
+	const orders: P2PRawOrders[] = [];
 	exchanges.forEach((exchange) => {
 		const exchangeOrdersPath = getExchangeOrdersFilePath(
 			fetchOptions,
@@ -80,7 +80,7 @@ const getOrdersFromDisk = (
 
 		if (fs.existsSync(exchangeOrdersPath)) {
 			console.log(`Reading orders on disk for ${exchange.name}`);
-			const exchangeOrders: RawP2PData = readJsonFile(exchangeOrdersPath);
+			const exchangeOrders: P2PRawOrders = readJsonFile(exchangeOrdersPath);
 			orders.push(exchangeOrders);
 		}
 	});
@@ -93,9 +93,9 @@ const MAX_FETCH_DURATION_DAYS = 59;
 export async function fetchP2POrders(
 	exchanges: P2PExchange[],
 	fetchOptions: P2POrdersFetchOptions
-): Promise<RawP2PData[]> {
+): Promise<P2PRawOrders[]> {
 	const [startDate, endDate] = getOptionsDate(fetchOptions);
-	
+
 	// Fetch orders in batches of MAX_FETCH_DURATION_DAYS
 	let nextStartDate = getDateFromBeginDay(startDate);
 	let nextEndDate = getDateFromEndDay(
@@ -103,7 +103,7 @@ export async function fetchP2POrders(
 	);
 
 	const fetchExchanges = filterExchanges(exchanges, fetchOptions);
-	const ordersData: RawP2PData[] = getOrdersFromDisk(exchanges, fetchOptions);
+	const ordersData: P2PRawOrders[] = getOrdersFromDisk(exchanges, fetchOptions);
 	fetchExchanges.forEach((exchange) => {
 		ordersData.push({
 			exchangeName: exchange.name,

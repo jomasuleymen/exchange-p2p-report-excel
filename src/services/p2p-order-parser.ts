@@ -1,8 +1,8 @@
-import { P2PExchange, P2POrder, RawP2PData } from "@/types";
+import { P2PExchange, P2POrder, P2PRawOrders } from "@/types";
 
-export function parseOrders(
+export async function parseOrders(
 	excahnges: P2PExchange[],
-	rawOrdersData: RawP2PData[]
+	rawOrdersData: P2PRawOrders[]
 ) {
 	const allParsedOrders: P2POrder[] = [];
 
@@ -16,7 +16,7 @@ export function parseOrders(
 			);
 		}
 
-		const parsedOrders: P2POrder[] = exchange.parseP2POrders(
+		const parsedOrders: P2POrder[] = await exchange.parseP2POrders(
 			rawOrderData.orders
 		);
 
