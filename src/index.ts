@@ -1,6 +1,6 @@
 import config from "./config/config";
 import exchanges from "./exchanges";
-import { ExcelP2PService } from "./services/excel/excel";
+import { exportP2POrdersToExcel } from "./services/export";
 import { parseOrders } from "./services/p2p-order-parser";
 import { fetchP2POrders } from "./services/p2p-orders";
 import { P2POrder, P2PRawOrders } from "./types";
@@ -14,11 +14,13 @@ const main = async () => {
 		throw new Error("No exchanges provided");
 	}
 
-	const orders: P2PRawOrders[] = await fetchP2POrders(exchanges, fetchOptions);
-	const parsedOrders: P2POrder[] = await parseOrders(exchanges, orders);
+	const rawOrders: P2PRawOrders[] = await fetchP2POrders(
+		exchanges,
+		fetchOptions
+	);
+	const parsedOrders: P2POrder[] = await parseOrders(exchanges, rawOrders);
 
-	const excelService = new ExcelP2PService();
-	await excelService.exportOrdersToExcel(parsedOrders, fetchOptions);
+	await exportP2POrdersToExcel(parsedOrders, fetchOptions);
 };
 
 main();

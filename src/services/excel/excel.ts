@@ -107,17 +107,20 @@ export class ExcelP2PService {
 		// hidden orders stored in "Скрытые" sheet in template file
 
 		const wb = await this.prepareWorkBook();
-		const { hiddenOrders, visibleOrders } = this.filterOrders(orders);
-		const groupedByFiat = _.groupBy(visibleOrders, "fiat");
+		const { visibleOrders, hiddenOrders } = this.filterOrders(orders);
 
+		// insert visibleOrders into workbook
+		const groupedByFiat = _.groupBy(visibleOrders, "fiat");
 		for (const [fiatCurrency, orders] of Object.entries(groupedByFiat)) {
 			const ws = await this.addNewFiatCurrencySheet(wb, fiatCurrency);
 			this.insertOrdersToSheet(ws, orders);
 		}
 
+		// insert hiddenOrders into workbook
 		const ws = await this.addNewFiatCurrencySheet(wb, "Скрытые");
 		this.insertOrdersToSheet(ws, hiddenOrders);
 
+		// write orders report into excel file
 		const ordersDirPath = getOrdersDirPath(fetchOptions);
 		const filePath = path.join(ordersDirPath, "report.xlsx");
 		await wb.xlsx.writeFile(filePath, { useStyles: true });

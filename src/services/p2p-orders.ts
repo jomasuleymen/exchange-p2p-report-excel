@@ -1,12 +1,10 @@
 import { P2PExchange, P2PRawOrders } from "@/types";
-import { readJsonFile } from "@/utils/file.util";
 import { sleep } from "@/utils/time.util";
-import * as fs from "fs";
 import moment from "moment";
 import {
-	getExchangeOrdersFilePath,
+	getRawOrdersFromDisk,
 	isExchangeOrdersAlreadyOnDisk,
-	writeOrdersOnDisk,
+	writeRawOrdersOnDisk,
 } from "./utils";
 
 export type FetchDate = { year: number; month: number; day: number };
@@ -55,7 +53,7 @@ const getMaxDate = (startDate: Date, maxDate: Date, durationDays: number) => {
 	return startMaxDate > maxDate ? maxDate : startMaxDate;
 };
 
-const filterExchanges = (
+const filterExchangesFromCache = (
 	exchanges: P2PExchange[],
 	fetchOptions: P2POrdersFetchOptions
 ) => {
@@ -63,29 +61,25 @@ const filterExchanges = (
 	const fetchExchanges = exchanges.filter(
 		(exchange) => !isExchangeOrdersAlreadyOnDisk(fetchOptions, exchange)
 	);
+	const cachedExchanges = exchanges.filter((exchange) =>
+		isExchangeOrdersAlreadyOnDisk(fetchOptions, exchange)
+	);
 
-	return fetchExchanges;
-};
+	// Write cached orders into rawOrders
+	const ordersInCache: P2PRawOrders[] = getRawOrdersFromDisk(
+		cachedExchanges,
+		fetchOptions
+	);
 
-const getOrdersFromDisk = (
-	exchanges: P2PExchange[],
-	fetchOptions: P2POrdersFetchOptions
-) => {
-	const orders: P2PRawOrders[] = [];
-	exchanges.forEach((exchange) => {
-		const exchangeOrdersPath = getExchangeOrdersFilePath(
-			fetchOptions,
-			exchange
-		);
-
-		if (fs.existsSync(exchangeOrdersPath)) {
-			console.log(`Reading orders on disk for ${exchange.name}`);
-			const exchangeOrders: P2PRawOrders = readJsonFile(exchangeOrdersPath);
-			orders.push(exchangeOrders);
-		}
+	// Create orders date for caching
+	fetchExchanges.forEach((exchange) => {
+		ordersInCache.push({
+			exchangeName: exchange.name,
+			orders: [],
+		});
 	});
 
-	return orders;
+	return { fetchExchanges, ordersInCache };
 };
 
 const MAX_FETCH_DURATION_DAYS = 59;
@@ -102,31 +96,30 @@ export async function fetchP2POrders(
 		getMaxDate(startDate, endDate, MAX_FETCH_DURATION_DAYS)
 	);
 
-	const fetchExchanges = filterExchanges(exchanges, fetchOptions);
-	const ordersData: P2PRawOrders[] = getOrdersFromDisk(exchanges, fetchOptions);
-	fetchExchanges.forEach((exchange) => {
-		ordersData.push({
-			exchangeName: exchange.name,
-			orders: [],
-		});
-	});
+	const { fetchExchanges, ordersInCache: rawOrders } = filterExchangesFromCache(
+		exchanges,
+		fetchOptions
+	);
 
 	if (fetchExchanges.length === 0) {
-		return ordersData;
+		return rawOrders;
 	}
 
 	while (nextStartDate < endDate) {
 		// Fetch orders from all exchanges
 		await Promise.all(
 			fetchExchanges.map(async (exchange) => {
+				// fetch orders from exchange
 				const orders = await exchange.fetchP2POrders(
 					nextStartDate,
 					nextEndDate
 				);
-				const data = ordersData.find(
-					(data) => data.exchangeName === exchange.name
+
+				// put orders into rawOrders for caching(writing on disk)
+				const exchangeRawOrders = rawOrders.find(
+					(data) => data.exchangeName == exchange.name
 				);
-				data?.orders.push(...orders);
+				exchangeRawOrders?.orders.push(...orders);
 			})
 		);
 
@@ -141,7 +134,7 @@ export async function fetchP2POrders(
 		await sleep(1000);
 	}
 
-	writeOrdersOnDisk(fetchOptions, exchanges, ordersData);
+	writeRawOrdersOnDisk(fetchOptions, exchanges, rawOrders);
 
-	return ordersData;
+	return rawOrders;
 }

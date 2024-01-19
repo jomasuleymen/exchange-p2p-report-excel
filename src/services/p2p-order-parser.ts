@@ -14,18 +14,20 @@ export async function parseOrders(
 ) {
 	const allParsedOrders: P2POrder[] = [];
 
-	for (const rawOrderData of rawOrdersData) {
+	for (const exchangeRawOrders of rawOrdersData) {
+		// find orders exchange
 		const exchange = excahnges.find(
-			(exchange) => exchange.name === rawOrderData.exchangeName
+			(exchange) => exchange.name === exchangeRawOrders.exchangeName
 		);
+
 		if (!exchange) {
 			throw new Error(
-				`Exchange ${rawOrderData.exchangeName} not found in exchanges list`
+				`Exchange ${exchangeRawOrders.exchangeName} not found in exchanges list`
 			);
 		}
 
 		const parsedOrders: P2POrder[] = await exchange.parseP2POrders(
-			rawOrderData.orders
+			exchangeRawOrders.orders
 		);
 
 		allParsedOrders.push(...parsedOrders);

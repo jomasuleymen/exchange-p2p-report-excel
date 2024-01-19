@@ -7,14 +7,18 @@ export const writeJsonFile = (path: string, data: any) => {
 };
 
 export const readJsonFile = (path: string) => {
-	if (fs.existsSync(path)) {
+	if (isPathExists(path)) {
 		return JSON.parse(fs.readFileSync(path, "utf8"));
 	}
 };
 
+export const isPathExists = (path: string) => {
+	return fs.existsSync(path);
+};
+
 export const ensureDirectoryExistence = (filePath: string) => {
 	var dirname = path.dirname(filePath);
-	if (!fs.existsSync(dirname)) {
+	if (!isPathExists(dirname)) {
 		fs.mkdirSync(dirname, { recursive: true });
 	}
 };

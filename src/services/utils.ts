@@ -1,6 +1,5 @@
 import { P2PExchange, P2PRawOrders } from "@/types";
-import { writeJsonFile } from "@/utils/file.util";
-import * as fs from "fs";
+import { isPathExists, readJsonFile, writeJsonFile } from "@/utils/file.util";
 import path from "path";
 import { P2POrdersFetchOptions } from "./p2p-orders";
 
@@ -25,18 +24,40 @@ export const getExchangeOrdersFilePath = (
 	return path.join(ordersDirPath, `${exchange.name}.json`);
 };
 
-export const writeOrdersOnDisk = (
+export const writeRawOrdersOnDisk = (
 	fetchOptions: P2POrdersFetchOptions,
 	exchanges: P2PExchange[],
 	rawP2PData: P2PRawOrders[]
 ) => {
 	exchanges.forEach((exchange) => {
 		const ordersDirPath = getExchangeOrdersFilePath(fetchOptions, exchange);
-		const exchangeOrders = rawP2PData.find(
+		const exchangeRawOrders = rawP2PData.find(
 			(order) => order.exchangeName === exchange.name
 		);
-		writeJsonFile(ordersDirPath, exchangeOrders);
+		writeJsonFile(ordersDirPath, exchangeRawOrders);
 	});
+};
+
+export const getRawOrdersFromDisk = (
+	exchanges: P2PExchange[],
+	fetchOptions: P2POrdersFetchOptions
+) => {
+	const rawOrders: P2PRawOrders[] = [];
+
+	exchanges.forEach((exchange) => {
+		const exchangeOrdersPath = getExchangeOrdersFilePath(
+			fetchOptions,
+			exchange
+		);
+
+		if (isPathExists(exchangeOrdersPath)) {
+			console.log(`Reading orders on disk for ${exchange.name}`);
+			const exchangeOrders: P2PRawOrders = readJsonFile(exchangeOrdersPath);
+			rawOrders.push(exchangeOrders);
+		}
+	});
+
+	return rawOrders;
 };
 
 export const isExchangeOrdersAlreadyOnDisk = (
@@ -44,5 +65,5 @@ export const isExchangeOrdersAlreadyOnDisk = (
 	exchange: P2PExchange
 ) => {
 	const ordersDirPath = getExchangeOrdersFilePath(fetchOptions, exchange);
-	return fs.existsSync(ordersDirPath);
+	return isPathExists(ordersDirPath);
 };
