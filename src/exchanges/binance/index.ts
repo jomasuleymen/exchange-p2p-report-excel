@@ -1,5 +1,5 @@
 import { P2PExchange, P2POrder } from "@/types";
-import { formatDate, sleep } from "@/utils/time.util";
+import { getDate, sleep } from "@/utils/time.util";
 import axios from "axios";
 
 export class BinanceP2PExchange implements P2PExchange {
@@ -129,7 +129,7 @@ export class BinanceP2PExchange implements P2PExchange {
 					order.tradeType == "BUY" ? getCounterPartyName(order) : "",
 				side: order.tradeType,
 				exchange: this.name,
-				dateAndTime: formatDate(new Date(order.createTime)),
+				dateAndTime: getDate(order.createTime),
 				price: parseFloat(order.price),
 				count: parseFloat(order.amount),
 				amount: parseFloat(order.totalPrice),

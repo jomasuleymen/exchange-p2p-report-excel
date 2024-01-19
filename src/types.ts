@@ -12,7 +12,7 @@ export type P2POrder = {
 	counterPartyName: string;
 	side: "BUY" | "SELL";
 	exchange: string;
-	dateAndTime: P2PDateTime;
+	dateAndTime: Date;
 	price: number;
 	count: number;
 	amount: number;

@@ -1,5 +1,5 @@
 import { P2PExchange, P2POrder } from "@/types";
-import { formatDate, sleep } from "@/utils/time.util";
+import { getDate, sleep } from "@/utils/time.util";
 import axios from "axios";
 
 export class OkxP2PExchange implements P2PExchange {
@@ -85,7 +85,7 @@ export class OkxP2PExchange implements P2PExchange {
 				counterPartyName: order.detailUser?.realName || "?",
 				side: order.side.toUpperCase() || "?",
 				exchange: this.name,
-				dateAndTime: formatDate(new Date(order.createdDate)),
+				dateAndTime: getDate(order.createdDate),
 				price: parseFloat(order.price),
 				count: parseFloat(order.baseAmount),
 				amount: parseFloat(order.quoteAmount),

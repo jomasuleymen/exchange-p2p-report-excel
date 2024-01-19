@@ -1,9 +1,9 @@
 import { P2PExchange, P2POrder } from "@/types";
-import { formatDate, sleep } from "@/utils/time.util";
-import axios from "axios";
-import path from "path";
-import * as fs from "fs";
 import { readJsonFile, writeJsonFile } from "@/utils/file.util";
+import { getDate, sleep } from "@/utils/time.util";
+import axios from "axios";
+import * as fs from "fs";
+import path from "path";
 
 export class BybitP2PExchange implements P2PExchange {
 	name: string = "Bybit";
@@ -126,7 +126,7 @@ export class BybitP2PExchange implements P2PExchange {
 					order.side == 1 ? order.buyerRealName : order.sellerRealName,
 				side: order.side == 1 ? "SELL" : "BUY",
 				exchange: this.name,
-				dateAndTime: formatDate(new Date(Number(order.createDate))),
+				dateAndTime: getDate(order.createDate),
 				price: parseFloat(order.price),
 				count: parseFloat(order.quantity),
 				amount: parseFloat(order.amount),
